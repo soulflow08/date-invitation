@@ -140,9 +140,9 @@ button{border:none;border-radius:16px;padding:16px 24px;font-size:18px;cursor:po
   <h1>✨ Детали свидания ✨</h1>
   <div class="card">
     <h3>📅 Дата</h3><p>19.07 💖</p>
-    <h3>📍 Место встречи</h3><p>Я приеду к тебе домой — Москва, 9-я Парковая улица, 1к1 🚗</p>
+    <h3>📍 Место встречи</h3><p>Я приеду к тебе домой — 9-я Парковая улица, д. 1, к. 1 🚗</p>
     <h3>🎁 Место назначения</h3><p>Сюрприз 😉</p>
-    <h3>👗 Дресс-код</h3><p>Комфортный лук </p><p>👟 Кроссовки — чтобы можно было прыгать от счастья! 🎉</p>
+    <h3>👗 Дресс-код</h3><p>Комфортный лук — без платьев и каблуков</p><p>👟 Кроссовки — чтобы можно было прыгать от счастья! 🎉</p>
     <h3>🕐 Время</h3><p>Напишу тебе отдельно 💌</p>
   </div>
   <button id="backBtn">↩ Назад</button>
@@ -228,265 +228,387 @@ function launchConfetti(){
 }
 
 /* ══════════════════════════════
-   GOOGLE DINO GAME
+   GOOGLE DINO GAME — pixel perfect
 ══════════════════════════════ */
 const dc = document.getElementById("dinoCanvas");
 const dctx = dc.getContext("2d");
-const W = 600, H = 150;
-const GROUND = 120;
-const DINO_X = 60;
 
-const scoreEl = document.getElementById("dScore");
-const hiScoreEl = document.getElementById("dHiScore");
-const msgEl = document.getElementById("dinoMsg");
+// Scale canvas 2x for crisp pixels on mobile
+const CW = 600, CH = 150;
+dc.width = CW; dc.height = CH;
+
+const GY = 118;       // ground y (top of ground line)
+const DINO_X = 55;    // dino fixed x
+const P = 2;          // 1 pixel = 2px on canvas
+
+const scoreEl  = document.getElementById("dScore");
+const hiScoreEl= document.getElementById("dHiScore");
+const msgEl    = document.getElementById("dinoMsg");
 const restartBtn = document.getElementById("dinoRestartBtn");
 
-let state = "idle"; // idle | running | dead
+let state = "idle";
 let score, hiScore, frame, speed, raf;
-let dino, obstacles, clouds;
+let dino, obstacles, clouds, groundTiles;
 
-hiScore = Number(localStorage.getItem("dinoHi") || 0);
-hiScoreEl.textContent = String(hiScore).padStart(5,"0");
+hiScore = Number(localStorage.getItem("dinoHi2")||0);
+hiScoreEl.textContent = fmt(hiScore);
 
 function fmt(n){ return String(Math.floor(n)).padStart(5,"0"); }
 
-function dinoInit(){
-  dino = {y: GROUND, vy: 0, onGround: true, frame: 0};
-  obstacles = [];
-  clouds = [{x:550,y:30},{x:350,y:55},{x:150,y:40}];
-  score = 0; frame = 0; speed = 6;
-  state = "idle";
-  msgEl.textContent = "Нажми пробел / тап чтобы начать";
-  restartBtn.style.display = "none";
-  cancelAnimationFrame(raf);
-  drawIdle();
-}
+/* ─── PIXEL SPRITES (each char = 1 pixel, P px drawn) ─── */
 
-function dinoStop(){ cancelAnimationFrame(raf); }
-
-function jump(){
-  if(state === "idle"){ state = "running"; msgEl.textContent = ""; loop(); return; }
-  if(state === "dead"){ dinoStart(); return; }
-  if(dino.onGround){ dino.vy = -13; dino.onGround = false; }
-}
-
-function dinoStart(){
-  dino = {y: GROUND, vy: 0, onGround: true, frame: 0};
-  obstacles = [];
-  score = 0; frame = 0; speed = 6;
-  state = "running";
-  msgEl.textContent = "";
-  restartBtn.style.display = "none";
-  cancelAnimationFrame(raf);
-  loop();
-}
-
-/* Input */
-document.addEventListener("keydown", e=>{ if(e.code==="Space"||e.code==="ArrowUp"){ e.preventDefault(); if(document.getElementById("page4").classList.contains("hidden"))return; jump(); } });
-dc.addEventListener("click", jump);
-dc.addEventListener("touchstart", e=>{ e.preventDefault(); jump(); });
-document.getElementById("dinoRestartBtn").onclick = ()=>dinoStart();
-
-/* ── Drawing helpers (pixel-art style) ── */
-
-/* Dino body pixel map: 12×13 */
-const DINO_BODY = [
-  "     XXXXXXX",
-  "    XXXXXXXXX",
-  "    XXXXXXX  ",
-  "    XXXXXXX  ",
-  " XXXXXXXXXX  ",
-  "XXXXXXXXXXX  ",
-  "XXXXXXXXXXX  ",
-  " XXXXXXXXXX  ",
-  "   XXXXXXX   ",
-  "   XXXXXX    ",
-  "   XX  XX    ",
-  "   X   X     ",
-  "   X   X     "
+// T-Rex 20×22 pixels — standing / run frame A
+const REX_A = [
+  "00000000001111110",
+  "00000000011111111",
+  "00000000011111110",
+  "00000000011111110",
+  "00000001111111100",
+  "00000011111111100",
+  "00001111111111100",
+  "01101111111111000",
+  "11111111111110000",
+  "11111111111110000",
+  "01111111111100000",
+  "00111111110000000",
+  "00011111110000000",
+  "00011111111000000",
+  "00001111100000000",
+  "00001001100000000",
+  "00001001000000000",
+  "00001001000000000",
+];
+// Run frame B — legs alternate
+const REX_B = [
+  "00000000001111110",
+  "00000000011111111",
+  "00000000011111110",
+  "00000000011111110",
+  "00000001111111100",
+  "00000011111111100",
+  "00001111111111100",
+  "01101111111111000",
+  "11111111111110000",
+  "11111111111110000",
+  "01111111111100000",
+  "00111111110000000",
+  "00011111110000000",
+  "00011111111000000",
+  "00001111100000000",
+  "00001100000000000",
+  "00000100100000000",
+  "00000000100000000",
+];
+// Dead — X eyes
+const REX_DEAD = [
+  "00000000001111110",
+  "00000000011111111",
+  "00000000011010110",
+  "00000000011111110",
+  "00000001111111100",
+  "00000011111111100",
+  "00001111111111100",
+  "01101111111111000",
+  "11111111111110000",
+  "11111111111110000",
+  "01111111111100000",
+  "00111111110000000",
+  "00011111110000000",
+  "00011111111000000",
+  "00001111100000000",
+  "00001001100000000",
+  "00001001000000000",
+  "00001001000000000",
 ];
 
-/* alternate leg frame */
-const DINO_RUN1 = [
-  "     XXXXXXX",
-  "    XXXXXXXXX",
-  "    XXXXXXX  ",
-  "    XXXXXXX  ",
-  " XXXXXXXXXX  ",
-  "XXXXXXXXXXX  ",
-  "XXXXXXXXXXX  ",
-  " XXXXXXXXXX  ",
-  "   XXXXXXX   ",
-  "   XXXXXX    ",
-  "   XX  XX    ",
-  "    X  X     ",
-  "    X        "
+// Pterodactyl wing up
+const PTERO_A = [
+  "000010000000",
+  "000111000000",
+  "001111100000",
+  "011111111110",
+  "111111111111",
+  "011011001100",
+  "000011000000",
+];
+// Pterodactyl wing down
+const PTERO_B = [
+  "000000000000",
+  "000010000000",
+  "011111111110",
+  "111111111111",
+  "001011001100",
+  "000111000000",
+  "000010000000",
 ];
 
-const DINO_DEAD = [
-  "     XXXXXXX",
-  "    XXXXXXXXX",
-  "    XOOXXXX  ",
-  "    XXXXXXX  ",
-  " XXXXXXXXXX  ",
-  "XXXXXXXXXXX  ",
-  "XXXXXXXXXXX  ",
-  " XXXXXXXXXX  ",
-  "   XXXXXXX   ",
-  "   XXXXXX    ",
-  "   XX  XX    ",
-  "   X   X     ",
-  "   X   X     "
+// Single cactus (small)
+const CACTUS_S = [
+  "00100",
+  "01110",
+  "11100",
+  "01100",
+  "01110",
+  "01100",
+  "11100",
+  "01100",
+  "01110",
+  "01111",
+  "01100",
+  "01100",
+  "01100",
+];
+// Double cactus
+const CACTUS_D = [
+  "001000100",
+  "011100110",
+  "111001110",
+  "011001100",
+  "011101110",
+  "011001100",
+  "111001100",
+  "011001100",
+  "011101110",
+  "011101111",
+  "011001100",
+  "011001100",
+  "011001100",
+];
+// Triple cactus (big)
+const CACTUS_T = [
+  "001000100010",
+  "011100110011",
+  "111001110111",
+  "011001100110",
+  "011101110111",
+  "011001100110",
+  "111001100110",
+  "011001100110",
+  "011101110111",
+  "011101111111",
+  "011001100110",
+  "011001100110",
+  "011001100110",
 ];
 
-const PX = 4; // pixel size
-
-function drawPixelMap(map, ox, oy, color="#535353"){
-  dctx.fillStyle = color;
-  map.forEach((row,r)=>{
+function drawSprite(grid, ox, oy, px){
+  dctx.fillStyle = "#535353";
+  grid.forEach((row,r)=>{
     for(let c=0;c<row.length;c++){
-      if(row[c]==="X") dctx.fillRect(ox+c*PX, oy+r*PX, PX, PX);
+      if(row[c]==="1") dctx.fillRect(ox+c*px, oy+r*px, px, px);
     }
   });
 }
 
-/* Eye white pixel on row 1, col 10 */
-function drawDino(x, y, dead){
-  const map = dead ? DINO_DEAD : (dino.frame<15 ? DINO_BODY : DINO_RUN1);
-  drawPixelMap(map, x, y, "#535353");
-  /* white of eye */
+function drawEye(ox, oy, dead){
+  // eye = white pixel at col 13, row 1 in REX
+  const ex = ox + 13*P, ey = oy + 1*P;
   dctx.fillStyle = "#f7f7f7";
-  dctx.fillRect(x+10*PX, y+1*PX, PX, PX);
-}
-
-/* Cactus: two sizes */
-function drawCactus(o){
-  dctx.fillStyle="#535353";
-  if(o.big){
-    /* big triple cactus */
-    const bx=o.x, by=o.y;
-    /* center trunk */
-    dctx.fillRect(bx+8, by, 8, 42);
-    /* left arm */
-    dctx.fillRect(bx, by+12, 8, 18);
-    dctx.fillRect(bx, by+12, 16, 6);
-    /* right arm */
-    dctx.fillRect(bx+16, by+8, 8, 22);
-    dctx.fillRect(bx+8, by+8, 16, 6);
-    /* top spike */
-    dctx.fillRect(bx+9, by-6, 6, 6);
-    /* left spike */
-    dctx.fillRect(bx-2, by+10, 4, 4);
-    /* right spike */
-    dctx.fillRect(bx+22, by+6, 4, 4);
-  } else {
-    /* small single cactus */
-    const bx=o.x, by=o.y;
-    dctx.fillRect(bx+4, by, 6, 32);
-    dctx.fillRect(bx, by+10, 4, 12);
-    dctx.fillRect(bx, by+10, 14, 5);
-    dctx.fillRect(bx+10, by+14, 4, 8);
-    dctx.fillRect(bx+4, by+14, 14, 5);
-    dctx.fillRect(bx+5, by-4, 4, 4);
+  dctx.fillRect(ex, ey, P, P);
+  if(dead){
+    // X cross
+    dctx.fillStyle = "#535353";
+    dctx.fillRect(ex-P, ey-P, P, P);
+    dctx.fillRect(ex+P, ey-P, P, P);
+    dctx.fillRect(ex,   ey,   P, P);
+    dctx.fillRect(ex-P, ey+P, P, P);
+    dctx.fillRect(ex+P, ey+P, P, P);
   }
 }
 
-function drawCloud(x, y){
-  dctx.fillStyle="#d0d0d0";
-  dctx.fillRect(x+10, y, 40, 8);
-  dctx.fillRect(x+4,  y+8, 52, 8);
-  dctx.fillRect(x,    y+16, 60, 8);
-  dctx.fillRect(x+4,  y+24, 52, 8);
+function drawDino(x, y, dead, legFrame){
+  const map = dead ? REX_DEAD : (legFrame < 8 ? REX_A : REX_B);
+  drawSprite(map, x, y, P);
+  drawEye(x, y, dead);
 }
 
+function drawPtero(x, y, wingFrame){
+  drawSprite(wingFrame < 10 ? PTERO_A : PTERO_B, x, y, P);
+}
+
+function drawCactus(o){
+  const map = o.type===0 ? CACTUS_S : o.type===1 ? CACTUS_D : CACTUS_T;
+  drawSprite(map, o.x, o.y, P);
+}
+
+/* ── Cloud: minimal pixel style ── */
+function drawCloud(x, y){
+  dctx.fillStyle = "#c8c8c8";
+  // simple blocky cloud
+  dctx.fillRect(x+16, y,    16, 4);
+  dctx.fillRect(x+8,  y+4,  32, 4);
+  dctx.fillRect(x,    y+8,  46, 4);
+  dctx.fillRect(x+8,  y+12, 32, 4);
+}
+
+/* ── Ground ── */
+let gPebbles = [];
+function initGround(){
+  gPebbles = [];
+  for(let i=0;i<20;i++) gPebbles.push({x: Math.random()*CW, w:Math.random()<0.5?4:6, h:P});
+}
 function drawGround(){
   dctx.fillStyle="#535353";
-  dctx.fillRect(0, GROUND+34, W, 2);
-  /* small ground details */
-  for(let i=0;i<15;i++){
-    const gx = (i*47 + frame*2) % (W+40) - 20;
-    dctx.fillRect(gx, GROUND+36, 10, 2);
-    dctx.fillRect(gx+22, GROUND+40, 6, 2);
-  }
+  dctx.fillRect(0, GY, CW, P);
+  dctx.fillRect(0, GY+P*2, CW, 1);
+  gPebbles.forEach(p=>{
+    dctx.fillRect(p.x, GY+P, p.w, p.h);
+  });
+}
+function scrollGround(){
+  gPebbles.forEach(p=>{
+    p.x -= speed*0.5;
+    if(p.x < -10) p.x = CW + Math.random()*50;
+  });
 }
 
-function drawScene(dead){
-  dctx.clearRect(0,0,W,H);
-
-  /* clouds */
-  clouds.forEach(c=> drawCloud(c.x, c.y));
-
-  drawGround();
-
-  /* dino */
-  drawDino(DINO_X, dino.y, dead);
-
-  /* obstacles */
-  obstacles.forEach(o=> drawCactus(o));
-}
-
-function drawIdle(){
-  dctx.clearRect(0,0,W,H);
-  drawGround();
-  drawDino(DINO_X, GROUND, false);
-}
-
-/* Collision */
-function dinoRect(){ return {x:DINO_X+4, y:dino.y+2, w:12*PX-8, h:13*PX-4}; }
-function cactusRect(o){
-  if(o.big) return {x:o.x+2, y:o.y+2, w:22, h:36};
-  return {x:o.x+2, y:o.y+2, w:10, h:28};
-}
+/* ── Collision ── */
 function rectsOverlap(a,b){ return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y; }
+function dinoHitbox(){ return {x:DINO_X+P*3, y:dino.y+P*2, w:P*10, h:P*14}; }
+function cactusHitbox(o){
+  const cols = o.type===0?5 : o.type===1?9:12;
+  return {x:o.x+P, y:o.y+P, w:cols*P-P*2, h:13*P-P*2};
+}
+function pteroHitbox(p){ return {x:p.x+P*2, y:p.y+P, w:P*8, h:P*5}; }
 
+/* ── Init / Start ── */
+function dinoInit(){
+  dino = {y: GY - 18*P, vy:0, onGround:true, legFrame:0};
+  obstacles = [];
+  clouds = [
+    {x:500, y:20, type:'cloud'},
+    {x:300, y:40, type:'cloud'},
+    {x:100, y:28, type:'cloud'},
+  ];
+  initGround();
+  score=0; frame=0; speed=5;
+  state="idle";
+  msgEl.textContent="Нажми пробел / тап чтобы начать";
+  restartBtn.style.display="none";
+  cancelAnimationFrame(raf);
+  renderFrame(false);
+}
+
+function dinoStop(){ cancelAnimationFrame(raf); }
+
+function dinoStart(){
+  dino = {y: GY - 18*P, vy:0, onGround:true, legFrame:0};
+  obstacles=[];
+  initGround();
+  score=0; frame=0; speed=5;
+  state="running";
+  msgEl.textContent="";
+  restartBtn.style.display="none";
+  cancelAnimationFrame(raf);
+  loop();
+}
+
+function jump(){
+  if(state==="idle"){ state="running"; msgEl.textContent=""; loop(); return; }
+  if(state==="dead"){ dinoStart(); return; }
+  if(dino.onGround){ dino.vy = -P*7; dino.onGround=false; }
+}
+
+/* ── Input ── */
+document.addEventListener("keydown", e=>{
+  if((e.code==="Space"||e.code==="ArrowUp"||e.code==="ArrowDown")){
+    e.preventDefault();
+    if(document.getElementById("page4").classList.contains("hidden")) return;
+    jump();
+  }
+});
+dc.addEventListener("click", jump);
+dc.addEventListener("touchstart", e=>{ e.preventDefault(); jump(); });
+document.getElementById("dinoRestartBtn").onclick = ()=>dinoStart();
+
+/* ── Obstacle spawner ── */
+let nextObstacleIn = 80;
+function trySpawnObstacle(){
+  if(frame < nextObstacleIn) return;
+  const r = Math.random();
+  // After score 300 add pterodactyls
+  if(score > 300 && r < 0.3){
+    // ptero at 3 heights: low (just above ground), mid, high
+    const heights = [GY-18*P-P*10, GY-18*P-P*20, GY-18*P-P*32];
+    const h = heights[Math.floor(Math.random()*heights.length)];
+    obstacles.push({kind:'ptero', x:CW+10, y:h, wing:0});
+  } else {
+    const type = r < 0.45 ? 0 : r < 0.78 ? 1 : 2; // small / double / triple
+    const cH = 13*P;
+    obstacles.push({kind:'cactus', type, x:CW+10, y:GY-cH});
+  }
+  // gap between obstacles
+  const baseGap = Math.max(60, 140 - score/5);
+  nextObstacleIn = frame + baseGap + Math.random()*60;
+}
+
+/* ── Render ── */
+function renderFrame(dead){
+  dctx.clearRect(0,0,CW,CH);
+  clouds.forEach(c=> drawCloud(c.x, c.y));
+  drawGround();
+  drawDino(DINO_X, dino.y, dead, dino.legFrame);
+  obstacles.forEach(o=>{
+    if(o.kind==='cactus') drawCactus(o);
+    else drawPtero(o.x, o.y, o.wing||0);
+  });
+}
+
+/* ── Game loop ── */
 function loop(){
   if(state!=="running") return;
   frame++;
 
-  /* physics */
-  dino.vy += 0.8;
+  // Physics
+  dino.vy += P*0.55;
   dino.y  += dino.vy;
-  if(dino.y >= GROUND){ dino.y=GROUND; dino.vy=0; dino.onGround=true; }
+  const groundY = GY - 18*P;
+  if(dino.y >= groundY){ dino.y=groundY; dino.vy=0; dino.onGround=true; }
 
-  /* leg animation */
-  dino.frame = (dino.frame+1) % 30;
+  // Leg animation
+  dino.legFrame = (dino.legFrame+1) % 16;
 
-  /* clouds */
-  clouds.forEach(c=>{ c.x -= 1.5; if(c.x < -70) c.x = W + 60; });
+  // Clouds
+  clouds.forEach(c=>{ c.x -= 1.2; if(c.x < -60) c.x = CW+50; });
 
-  /* spawn obstacles */
-  const minGap = Math.max(250, 500 - Math.floor(score/20)*10);
-  if(obstacles.length===0 || obstacles[obstacles.length-1].x < W - minGap){
-    if(Math.random()<0.4){
-      const big = Math.random()<0.4;
-      const h = big ? 48 : 36;
-      obstacles.push({x:W+10, y:GROUND+34-h, big});
-    }
+  // Ground scroll
+  scrollGround();
+
+  // Obstacles
+  trySpawnObstacle();
+  const spd = speed;
+  obstacles.forEach(o=>{
+    o.x -= spd;
+    if(o.kind==='ptero'){ o.wing = (o.wing||0)+1; if(o.wing>=20) o.wing=0; }
+  });
+  obstacles = obstacles.filter(o=>o.x > -80);
+
+  // Score
+  if(frame%5===0){
+    score++;
+    scoreEl.textContent = fmt(score);
+    if(score > hiScore){ hiScore=score; hiScoreEl.textContent=fmt(hiScore); localStorage.setItem("dinoHi2",hiScore); }
   }
 
-  /* move obstacles */
-  obstacles.forEach(o=>{ o.x -= speed; });
-  obstacles = obstacles.filter(o=>o.x > -60);
+  // Speed up
+  if(frame%600===0) speed = Math.min(speed+0.4, 16);
 
-  /* score */
-  if(frame%6===0){ score++; scoreEl.textContent=fmt(score); if(score>hiScore){hiScore=score;hiScoreEl.textContent=fmt(hiScore);localStorage.setItem("dinoHi",hiScore);} }
-  if(frame%500===0) speed = Math.min(speed+0.5, 14);
-
-  /* collision */
-  const dr = dinoRect();
+  // Collision
+  const dr = dinoHitbox();
   for(const o of obstacles){
-    if(rectsOverlap(dr, cactusRect(o))){ die(); return; }
+    const hr = o.kind==='cactus' ? cactusHitbox(o) : pteroHitbox(o);
+    if(rectsOverlap(dr, hr)){ die(); return; }
   }
 
-  drawScene(false);
+  renderFrame(false);
   raf = requestAnimationFrame(loop);
 }
 
 function die(){
-  state = "dead";
-  drawScene(true);
-  msgEl.textContent = "GAME OVER";
-  restartBtn.style.display = "inline-block";
+  state="dead";
+  renderFrame(true);
+  msgEl.textContent="GAME OVER";
+  restartBtn.style.display="inline-block";
 }
 </script>
 </body>
