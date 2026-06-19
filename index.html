@@ -6,7 +6,6 @@
 <title>💖 Важный вопрос 💖</title>
 
 <style>
-
 *{
 margin:0;
 padding:0;
@@ -33,9 +32,7 @@ padding:25px;
 text-align:center;
 }
 
-.hidden{
-display:none;
-}
+.hidden{display:none;}
 
 h1{
 color:#ff9ec4;
@@ -143,17 +140,9 @@ opacity:.8;
 }
 
 @keyframes float{
-from{
-transform:translateY(100vh);
-opacity:0;
-}
-20%{
-opacity:1;
-}
-to{
-transform:translateY(-120px);
-opacity:0;
-}
+from{transform:translateY(100vh);opacity:0;}
+20%{opacity:1;}
+to{transform:translateY(-120px);opacity:0;}
 }
 
 #confetti{
@@ -163,7 +152,6 @@ pointer-events:none;
 z-index:999;
 }
 
-/* Game styles */
 #gameCanvas{
 border:2px solid #ff9ec4;
 background:#1a0f1a;
@@ -175,16 +163,21 @@ max-height:60vh;
 #score{
 font-size:24px;
 color:#ff9ec4;
-margin-bottom:10px;
+margin-bottom:6px;
+}
+
+#bestScore{
+font-size:18px;
+color:#ffd6e7;
+margin-bottom:12px;
 }
 
 #gameMessage{
 font-size:20px;
 color:#ffd6e7;
-margin-top:10px;
+margin-top:12px;
 text-align:center;
 }
-
 </style>
 </head>
 <body>
@@ -218,13 +211,9 @@ text-align:center;
 (◕‿◕✿)
 </div>
 
-<h2 id="message">
-УРА!!! 🎉🎊🎉
-</h2>
+<h2 id="message">УРА!!! 🎉🎊🎉</h2>
 
-<button id="detailsBtn">
-Узнать детали свидания 🗺️
-</button>
+<button id="detailsBtn">Узнать детали свидания 🗺️</button>
 
 </div>
 
@@ -233,7 +222,6 @@ text-align:center;
 <h1>✨ Детали свидания ✨</h1>
 
 <div class="card">
-
 <h3>📅 Дата</h3>
 <p>19 июля — запомни этот день 💖</p>
 
@@ -245,40 +233,37 @@ text-align:center;
 
 <h3>👗 Дресс-код</h3>
 <p>Комфортный лук — без платьев и каблуков</p>
-<p>👟 **Кроссовки** — чтобы можно было прыгать от счастья! 🎉</p>
+<p>👟 Кроссовки — чтобы можно было прыгать от счастья! 🎉</p>
 
 <h3>🕐 Время</h3>
 <p>Напишу тебе отдельно 💌</p>
-
 </div>
 
-<button id="backBtn">
-↩ Назад
-</button>
-
-<button id="gameBtn">
-🎮 Поиграть в мини-игру
-</button>
+<button id="backBtn">↩ Назад</button>
+<button id="gameBtn">🎮 Поиграть в мини-игру</button>
 
 </div>
 
 <div id="page4" class="page hidden">
 
 <h1>🎮 Бесконечная мини-игра 🎮</h1>
-<p style="color:#ff9ec4;margin-bottom:15px;">Кликай / жми, чтобы прыгать! Прыгай по платформам 🦕</p>
+<p style="color:#ff9ec4;margin-bottom:15px;">Жми на экран или кнопку, чтобы прыгать через кактусы 🌵</p>
 
 <div id="score">Счёт: 0</div>
-<canvas id="gameCanvas" width="400" height="250"></canvas>
+<div id="bestScore">Рекорд: 0</div>
+
+<canvas id="gameCanvas" width="420" height="220"></canvas>
+
 <div id="gameMessage"></div>
 
-<button id="gameBackBtn">
-↩ Назад к свиданию
-</button>
+<div class="buttons" style="margin-top:18px;flex-direction:column;">
+<button id="restartGameBtn" style="background:#e91e8c;color:white;font-weight:bold;">Играть ещё раз 🔁</button>
+<button id="gameBackBtn" style="background:#3a1a3a;color:white;">↩ Назад к свиданию</button>
+</div>
 
 </div>
 
 <script>
-
 const page1=document.getElementById("page1");
 const page2=document.getElementById("page2");
 const page3=document.getElementById("page3");
@@ -286,11 +271,11 @@ const page4=document.getElementById("page4");
 
 const yesBtn=document.getElementById("yesBtn");
 const noBtn=document.getElementById("noBtn");
-
 const detailsBtn=document.getElementById("detailsBtn");
 const backBtn=document.getElementById("backBtn");
 const gameBtn=document.getElementById("gameBtn");
 const gameBackBtn=document.getElementById("gameBackBtn");
+const restartGameBtn=document.getElementById("restartGameBtn");
 
 const messages=[
 "УРА!!! 🎉🎊🎉",
@@ -299,45 +284,31 @@ const messages=[
 "Жду не дождусь! 🌹",
 "Ты — лучшая! 💕💕💕"
 ];
-
 let msgIndex=0;
+let messageTimer=null;
 
 function placeNoButton(){
 noBtn.style.left="70vw";
 noBtn.style.top="70vh";
 }
-
 placeNoButton();
 
 function runAway(){
-
 const w=window.innerWidth-140;
 const h=window.innerHeight-80;
-
-const x=Math.random()*w;
-const y=Math.random()*h;
-
-noBtn.style.left=x+"px";
-noBtn.style.top=y+"px";
+noBtn.style.left=(Math.random()*w)+"px";
+noBtn.style.top=(Math.random()*h)+"px";
 }
-
 noBtn.addEventListener("mouseover",runAway);
-noBtn.addEventListener("touchstart",e=>{
-e.preventDefault();
-runAway();
-});
+noBtn.addEventListener("touchstart",e=>{e.preventDefault();runAway();});
 
 yesBtn.onclick=()=>{
-
 page1.classList.add("hidden");
 page2.classList.remove("hidden");
-
 launchConfetti();
-
-setInterval(()=>{
-document.getElementById("message").textContent=
-messages[msgIndex];
-
+if(messageTimer) clearInterval(messageTimer);
+messageTimer=setInterval(()=>{
+document.getElementById("message").textContent=messages[msgIndex];
 msgIndex=(msgIndex+1)%messages.length;
 },1800);
 };
@@ -365,46 +336,29 @@ stopGame();
 };
 
 function spawnHeart(){
-
 const heart=document.createElement("div");
-
 heart.className="heart";
-
 heart.innerHTML=Math.random()>0.5?"♡":"♥";
-
 heart.style.left=Math.random()*100+"vw";
-
 heart.style.fontSize=(12+Math.random()*24)+"px";
-
-heart.style.color=
-["#ff4db5","#ff9ec4","#ffd6e7"][Math.floor(Math.random()*3)];
-
+heart.style.color=["#ff4db5","#ff9ec4","#ffd6e7"][Math.floor(Math.random()*3)];
 document.body.appendChild(heart);
-
-setTimeout(()=>{
-heart.remove();
-},8000);
+setTimeout(()=>heart.remove(),8000);
 }
-
 setInterval(spawnHeart,500);
 
 const canvas=document.getElementById("confetti");
 const ctx=canvas.getContext("2d");
-
 function resize(){
 canvas.width=window.innerWidth;
 canvas.height=window.innerHeight;
 }
-
 resize();
 window.addEventListener("resize",resize);
 
 function launchConfetti(){
-
 const confetti=[];
-
 for(let i=0;i<250;i++){
-
 confetti.push({
 x:canvas.width/2,
 y:canvas.height/2,
@@ -413,165 +367,151 @@ vy:(Math.random()-0.5)*12,
 size:4+Math.random()*6,
 color:`hsl(${Math.random()*360},100%,60%)`
 });
-
 }
-
 function animate(){
-
 ctx.clearRect(0,0,canvas.width,canvas.height);
-
 confetti.forEach(c=>{
-
 c.x+=c.vx;
 c.y+=c.vy;
-
 c.vy+=0.08;
-
 ctx.fillStyle=c.color;
 ctx.fillRect(c.x,c.y,c.size,c.size);
-
 });
-
 requestAnimationFrame(animate);
 }
-
 animate();
-
-setTimeout(()=>{
-ctx.clearRect(0,0,canvas.width,canvas.height);
-},6000);
+setTimeout(()=>{ctx.clearRect(0,0,canvas.width,canvas.height);},6000);
 }
 
-/* ============ MINI GAME (Прыгай по платформам) ============ */
+const gameCanvas=document.getElementById("gameCanvas");
+const gameCtx=gameCanvas.getContext("2d");
+const scoreEl=document.getElementById("score");
+const bestScoreEl=document.getElementById("bestScore");
+const gameMessageEl=document.getElementById("gameMessage");
 
-const gameCanvas = document.getElementById("gameCanvas");
-const gameCtx = gameCanvas.getContext("2d");
-const scoreEl = document.getElementById("score");
-const gameMessageEl = document.getElementById("gameMessage");
+let gameRunning=false;
+let gameOver=false;
+let player, obstacles, score, bestScore, frame, speed, groundY, rafId;
 
-let gameRunning = false;
-let player = { x: 50, y: 150, width: 30, height: 30, velocityY: 0, jumping: false };
-let platforms = [];
-let score = 0;
-let frame = 0;
-let gameSpeed = 2;
-
-function startGame() {
-  gameRunning = true;
-  score = 0;
-  frame = 0;
-  gameSpeed = 2;
-  player.y = 150;
-  player.velocityY = 0;
-  player.jumping = false;
-  
-  // Начальные платформы
-  platforms = [
-    { x: 0, y: 180, width: 100, height: 10 },
-    { x: 120, y: 160, width: 80, height: 10 },
-    { x: 220, y: 180, width: 100, height: 10 }
-  ];
-  
-  gameMessageEl.textContent = "";
-  scoreEl.textContent = "Счёт: 0";
-  gameLoop();
+function initGame(){
+player={x:40,y:150,w:28,h:28,vy:0,onGround:true};
+obstacles=[];
+score=0;
+frame=0;
+speed=3;
+groundY=180;
+gameOver=false;
+gameRunning=true;
+bestScore=Number(localStorage.getItem("dinoBestScore")||0);
+scoreEl.textContent="Счёт: 0";
+bestScoreEl.textContent="Рекорд: "+bestScore;
+gameMessageEl.textContent="";
 }
 
-function stopGame() {
-  gameRunning = false;
+function startGame(){
+initGame();
+cancelAnimationFrame(rafId);
+loop();
 }
 
-function jump() {
-  if (gameRunning && !player.jumping) {
-    player.velocityY = -9;
-    player.jumping = true;
-  }
+function stopGame(){
+gameRunning=false;
+cancelAnimationFrame(rafId);
 }
 
-// Jump on click/tap
-gameCanvas.addEventListener("click", jump);
-gameCanvas.addEventListener("touchstart", (e) => {
-  e.preventDefault();
-  jump();
-});
-
-function gameLoop() {
-  if (!gameRunning) return;
-
-  gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
-
-  // Обновляем игрока
-  player.velocityY += 0.4;
-  player.y += player.velocityY;
-
-  // Проверка падения вниз
-  if (player.y > gameCanvas.height) {
-    gameRunning = false;
-    gameMessageEl.textContent = `💥 Ты проиграл! Счёт: ${score} 🦕`;
-    return;
-  }
-
-  // Отрисовка игрока
-  gameCtx.fillStyle = "#7dd3fc";
-  gameCtx.fillRect(player.x, player.y, player.width, player.height);
-  // Глаз
-  gameCtx.fillStyle = "#140914";
-  gameCtx.fillRect(player.x + 20, player.y + 5, 4, 4);
-
-  // Генерация новых платформ
-  frame++;
-  if (frame % 120 === 0) {
-    let lastPlatform = platforms[platforms.length - 1];
-    let gap = 60 + Math.random() * 40;
-    let newY = 140 + Math.random() * 60;
-    platforms.push({
-      x: lastPlatform.x + lastPlatform.width + gap,
-      y: newY,
-      width: 70 + Math.random() * 40,
-      height: 10
-    });
-  }
-
-  // Обновление и отрисовка платформ
-  for (let i = 0; i < platforms.length; i++) {
-    let p = platforms[i];
-    p.x -= gameSpeed;
-
-    // Отрисовка платформы
-    gameCtx.fillStyle = "#ff9ec4";
-    gameCtx.fillRect(p.x, p.y, p.width, p.height);
-
-    // Проверка попадания на платформу
-    if (
-      player.x + player.width > p.x &&
-      player.x < p.x + p.width &&
-      player.y + player.height >= p.y &&
-      player.y + player.height <= p.y + 15 &&
-      player.velocityY > 0
-    ) {
-      player.velocityY = 0;
-      player.y = p.y - player.height;
-      player.jumping = false;
-    }
-  }
-
-  // Удаление старых платформ
-  platforms = platforms.filter(p => p.x + p.width > 0);
-
-  // Счёт
-  if (frame % 10 === 0) {
-    score++;
-    scoreEl.textContent = "Счёт: " + score;
-  }
-
-  // Увеличение скорости
-  if (frame % 600 === 0) {
-    gameSpeed += 0.2;
-  }
-
-  requestAnimationFrame(gameLoop);
+function jump(){
+if(!gameRunning || gameOver) return;
+if(player.onGround){
+player.vy=-9.5;
+player.onGround=false;
+}
 }
 
+gameCanvas.addEventListener("click",jump);
+gameCanvas.addEventListener("touchstart",e=>{e.preventDefault();jump();});
+restartGameBtn.onclick=()=>{startGame();};
+
+function spawnObstacle(){
+obstacles.push({x:gameCanvas.width,y:groundY-26,w:16+Math.random()*14,h:26});
+}
+
+function drawDino(){
+gameCtx.fillStyle="#7dd3fc";
+gameCtx.fillRect(player.x,player.y,player.w,player.h);
+gameCtx.fillStyle="#140914";
+gameCtx.fillRect(player.x+18,player.y+6,3,3);
+}
+
+function drawObstacle(o){
+gameCtx.fillStyle="#ff4db5";
+gameCtx.fillRect(o.x,o.y,o.w,o.h);
+gameCtx.fillRect(o.x+3,o.y-8,o.w-6,8);
+}
+
+function collides(a,b){
+return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+function endGame(){
+gameOver=true;
+gameRunning=false;
+if(score>bestScore){
+bestScore=score;
+localStorage.setItem("dinoBestScore",String(bestScore));
+}
+bestScoreEl.textContent="Рекорд: "+bestScore;
+gameMessageEl.textContent="💥 Игра окончена. Нажми «Играть ещё раз»";
+}
+
+function loop(){
+if(!gameRunning) return;
+
+gameCtx.clearRect(0,0,gameCanvas.width,gameCanvas.height);
+
+gameCtx.fillStyle="#ff9ec4";
+gameCtx.fillRect(0,groundY+14,gameCanvas.width,4);
+
+player.vy+=0.45;
+player.y+=player.vy;
+if(player.y>=150){
+player.y=150;
+player.vy=0;
+player.onGround=true;
+}
+
+drawDino();
+
+frame++;
+if(frame % Math.max(70,110 - Math.floor(score/20)) === 0){
+spawnObstacle();
+}
+
+for(let i=0;i<obstacles.length;i++){
+const o=obstacles[i];
+o.x-=speed;
+drawObstacle(o);
+if(collides(player,o)){
+endGame();
+return;
+}
+}
+obstacles=obstacles.filter(o=>o.x+o.w>0);
+
+if(frame % 6 === 0){
+score++;
+scoreEl.textContent="Счёт: "+score;
+if(score>bestScore){
+bestScore=score;
+bestScoreEl.textContent="Рекорд: "+bestScore;
+}
+}
+
+if(frame % 400 === 0){
+speed += 0.25;
+}
+
+rafId=requestAnimationFrame(loop);
+}
 </script>
 
 </body>
