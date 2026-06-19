@@ -95,6 +95,13 @@ font-weight:bold;
 margin-top:35px;
 }
 
+#gameBtn{
+background:#e91e8c;
+color:white;
+font-weight:bold;
+margin-top:20px;
+}
+
 .card{
 width:min(92vw,700px);
 background:rgba(255,255,255,.05);
@@ -118,6 +125,12 @@ margin-bottom:10px;
 
 #backBtn{
 margin-top:25px;
+background:#3a1a3a;
+color:white;
+}
+
+#gameBackBtn{
+margin-top:20px;
 background:#3a1a3a;
 color:white;
 }
@@ -148,6 +161,28 @@ position:fixed;
 inset:0;
 pointer-events:none;
 z-index:999;
+}
+
+/* Game styles */
+#gameCanvas{
+border:2px solid #ff9ec4;
+background:#1a0f1a;
+border-radius:12px;
+max-width:92vw;
+max-height:60vh;
+}
+
+#score{
+font-size:24px;
+color:#ff9ec4;
+margin-bottom:10px;
+}
+
+#gameMessage{
+font-size:20px;
+color:#ffd6e7;
+margin-top:10px;
+text-align:center;
 }
 
 </style>
@@ -191,6 +226,10 @@ z-index:999;
 Узнать детали свидания 🗺️
 </button>
 
+<button id="gameBtn">
+🎮 Поиграть в мини-игру
+</button>
+
 </div>
 
 <div id="page3" class="page hidden">
@@ -210,6 +249,7 @@ z-index:999;
 
 <h3>👗 Дресс-код</h3>
 <p>Комфортный лук — без платьев и каблуков</p>
+<p>👟 **Кроссовки** — чтобы можно было прыгать от счастья! 🎉</p>
 
 <h3>🕐 Время</h3>
 <p>Напишу тебе отдельно 💌</p>
@@ -222,17 +262,35 @@ z-index:999;
 
 </div>
 
+<div id="page4" class="page hidden">
+
+<h1>🎮 Бесконечная мини-игра 🎮</h1>
+<p style="color:#ff9ec4;margin-bottom:15px;">Кликай / жми, чтобы прыгать! Перепрыгивай препятствия 🦕</p>
+
+<div id="score">Счёт: 0</div>
+<canvas id="gameCanvas" width="400" height="250"></canvas>
+<div id="gameMessage"></div>
+
+<button id="gameBackBtn">
+↩ Назад к свиданию
+</button>
+
+</div>
+
 <script>
 
 const page1=document.getElementById("page1");
 const page2=document.getElementById("page2");
 const page3=document.getElementById("page3");
+const page4=document.getElementById("page4");
 
 const yesBtn=document.getElementById("yesBtn");
 const noBtn=document.getElementById("noBtn");
 
 const detailsBtn=document.getElementById("detailsBtn");
 const backBtn=document.getElementById("backBtn");
+const gameBtn=document.getElementById("gameBtn");
+const gameBackBtn=document.getElementById("gameBackBtn");
 
 const messages=[
 "УРА!!! 🎉🎊🎉",
@@ -292,6 +350,18 @@ page3.classList.remove("hidden");
 backBtn.onclick=()=>{
 page3.classList.add("hidden");
 page2.classList.remove("hidden");
+};
+
+gameBtn.onclick=()=>{
+page2.classList.add("hidden");
+page4.classList.remove("hidden");
+startGame();
+};
+
+gameBackBtn.onclick=()=>{
+page4.classList.add("hidden");
+page2.classList.remove("hidden");
+stopGame();
 };
 
 function spawnHeart(){
@@ -370,6 +440,127 @@ animate();
 setTimeout(()=>{
 ctx.clearRect(0,0,canvas.width,canvas.height);
 },6000);
+}
+
+/* ============ MINI GAME (Динозаврик) ============ */
+
+const gameCanvas = document.getElementById("gameCanvas");
+const gameCtx = gameCanvas.getContext("2d");
+const scoreEl = document.getElementById("score");
+const gameMessageEl = document.getElementById("gameMessage");
+
+let gameRunning = false;
+let dinosaur = { x: 50, y: 150, width: 30, height: 30, velocity: 0, jumpPower: -10, gravity: 0.5 };
+let obstacles = [];
+let score = 0;
+let frame = 0;
+let gameSpeed = 3;
+
+function startGame() {
+  gameRunning = true;
+  score = 0;
+  frame = 0;
+  gameSpeed = 3;
+  obstacles = [];
+  dinosaur.y = 150;
+  dinosaur.velocity = 0;
+  gameMessageEl.textContent = "";
+  scoreEl.textContent = "Счёт: 0";
+  gameLoop();
+}
+
+function stopGame() {
+  gameRunning = false;
+}
+
+function jump() {
+  if (gameRunning) {
+    dinosaur.velocity = dinosaur.jumpPower;
+  }
+}
+
+// Jump on click/tap
+gameCanvas.addEventListener("click", jump);
+gameCanvas.addEventListener("touchstart", (e) => {
+  e.preventDefault();
+  jump();
+});
+
+function gameLoop() {
+  if (!gameRunning) return;
+
+  gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+  // Update dinosaur
+  dinosaur.velocity += dinosaur.gravity;
+  dinosaur.y += dinosaur.velocity;
+
+  // Ground check
+  if (dinosaur.y > 180) {
+    dinosaur.y = 180;
+    dinosaur.velocity = 0;
+  }
+
+  // Draw dinosaur (simple pixel Dino)
+  gameCtx.fillStyle = "#7dd3fc";
+  gameCtx.fillRect(dinosaur.x, dinosaur.y, dinosaur.width, dinosaur.height);
+  // Eye
+  gameCtx.fillStyle = "#140914";
+  gameCtx.fillRect(dinosaur.x + 20, dinosaur.y + 5, 4, 4);
+
+  // Generate obstacles
+  frame++;
+  if (frame % 90 === 0) {
+    let height = 30 + Math.random() * 30;
+    obstacles.push({
+      x: gameCanvas.width,
+      y: 180 - height,
+      width: 20,
+      height: height
+    });
+  }
+
+  // Update and draw obstacles
+  for (let i = 0; i < obstacles.length; i++) {
+    let obs = obstacles[i];
+    obs.x -= gameSpeed;
+
+    // Draw obstacle
+    gameCtx.fillStyle = "#ff4db5";
+    gameCtx.fillRect(obs.x, obs.y, obs.width, obs.height);
+
+    // Collision check
+    if (
+      dinosaur.x < obs.x + obs.width &&
+      dinosaur.x + dinosaur.width > obs.x &&
+      dinosaur.y < obs.y + obs.height &&
+      dinosaur.y + dinosaur.height > obs.y
+    ) {
+      gameRunning = false;
+      gameMessageEl.textContent = `💥 Ты проиграл! Счёт: ${score} 🦕`;
+      return;
+    }
+  }
+
+  // Remove off-screen obstacles
+  obstacles = obstacles.filter(obs => obs.x + obs.width > 0);
+
+  // Increase score
+  if (frame % 10 === 0) {
+    score++;
+    scoreEl.textContent = "Счёт: " + score;
+  }
+
+  // Increase game speed slowly
+  if (frame % 500 === 0) {
+    gameSpeed += 0.5;
+  }
+
+  // Draw ground
+  gameCtx.fillStyle = "#ff9ec4";
+  gameCtx.fillRect(0, 210, gameCanvas.width, 4);
+
+  requestAnimationFrame(gameLoop);
 }
 
 </script>
