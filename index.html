@@ -121,7 +121,7 @@ button{border:none;border-radius:16px;padding:16px 24px;font-size:18px;cursor:po
 
 <!-- PAGE 1: Вопрос -->
 <div id="page1" class="page">
-  <h1>💖 Дорогая... 💖</h1>
+  <h1>💖 Любимая девушка 💖</h1>
   <h2>Ты пойдёшь со мной<br>на свидание? 🌹</h2>
   <div class="bear">(´• ω •`)<br>♡</div>
   <div class="buttons"><button id="yesBtn">Да! 💖</button></div>
@@ -139,7 +139,8 @@ button{border:none;border-radius:16px;padding:16px 24px;font-size:18px;cursor:po
 <div id="page3" class="page hidden">
   <h1>✨ Детали свидания ✨</h1>
   <div class="card">
-    <h3>📅 Дата</h3><p>19 июля — запомни этот день 💖</p>
+    <h3>📅 Дата</h3><p>19.07 💖</p>
+    <a id="calBtn" href="#" style="display:inline-flex;align-items:center;gap:8px;margin-bottom:12px;background:#e91e8c;color:white;border-radius:12px;padding:10px 18px;font-size:15px;font-family:Georgia,serif;text-decoration:none;font-weight:bold;">🗓️ Добавить в календарь</a>
     <h3>📍 Место встречи</h3><p>Я приеду к тебе домой — 9-я Парковая улица, д. 1, к. 1 🚗</p>
     <h3>🎁 Место назначения</h3><p>Сюрприз 😉</p>
     <h3>👗 Дресс-код</h3><p>Комфортный лук — без платьев и каблуков</p><p>👟 Кроссовки — чтобы можно было прыгать от счастья! 🎉</p>
@@ -226,6 +227,29 @@ function launchConfetti(){
   }
   anim();
 }
+
+/* ── Calendar ICS ── */
+document.getElementById("calBtn").onclick = function(e){
+  e.preventDefault();
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Date//RU",
+    "BEGIN:VEVENT",
+    "DTSTART;VALUE=DATE:20250719",
+    "DTEND;VALUE=DATE:20250720",
+    "SUMMARY:💖 Свидание",
+    "DESCRIPTION:Комфортный лук\\, кроссовки — встреча у тебя дома 🚗",
+    "LOCATION:9-я Парковая улица\\, д. 1\\, к. 1",
+    "END:VEVENT",
+    "END:VCALENDAR"
+  ].join("\r\n");
+  const blob = new Blob([ics], {type:"text/calendar;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "svidanie.ics"; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+};
 
 /* ══════════════════════════════
    GOOGLE DINO GAME
